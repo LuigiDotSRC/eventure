@@ -1,6 +1,8 @@
 import express from 'express';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from './app.js';
+import { verifyToken } from './middleware.js';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 const router = express.Router();
 
@@ -18,6 +20,22 @@ router.post('/register', async (req, res) => {
     } catch (error) {
         res.status(400).json({ error: error.message });
     }
+});
+
+router.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        const token = await user.getIdToken();
+        res.json({ message: 'Login successful!', token });
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+});
+
+router.get('/protected', verifyToken, (req, res) => {
+    res.send(`Welcome, authenticated user with UID: ${req.user.uid}`);
 });
 
 export default router;
